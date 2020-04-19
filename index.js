@@ -1,9 +1,17 @@
 // emp-track by Kasey Chang // github.com/kschang77/emp-track
 
-var mysql = require("mysql");
-var inquirer = require("inquirer")
+const mysql = require("mysql");
+const inquirer = require("inquirer")
+const util = require('util');
 const figlet = require("figlet")
 const chalk = require("chalk")
+const Table = require("cli-table")
+
+// use this to open a connect as we need it
+// EX 
+// myConn = getSQLConnection()
+//  ... run some query with myConn.query(...)
+// myConn.end();
 
 function getSQLConnection() {
   var params = {
@@ -11,10 +19,92 @@ function getSQLConnection() {
     port: 3306,
     user: "root",
     password: "password",
-    database: "employeeDB"
+    database: "employeedb"
   }
   return mysql.createConnection(params);
 }
+
+// trying alternate syntax to test db code
+
+config = {
+  host: "localhost",
+  port: 3306,
+  user: "root",
+  password: "password",
+  database: "employeedb"
+}
+
+function makeDb(config) {
+  const connection = mysql.createConnection(config);
+  return {
+    query(sql, args) {
+      return util.promisify(connection.query)
+        .call(connection, sql, args);
+    },
+    close() {
+      return util.promisify(connection.end).call(connection);
+    }
+  };
+}
+
+// some validation functions
+
+function validateInteger(int) {
+  if (Number.isInteger(Number(int))) {
+    return true
+  } else {
+    return "That is not an integer!"
+  }
+}
+
+function validateNonBlank(str) {
+  if (str == '') {
+    return "This cannot be blank!"
+  } else {
+    return true
+  }
+}
+
+function validateNumber(str) {
+  var reg = /^\d+$/;
+  return reg.test(str) || "This should be a number!";
+}
+
+function validateDepartmentNameOk(str) {
+  if (str == '') {
+    return "This cannot be blank!"
+  } else {
+    if (str.length > 30) {
+      return "Length must be <30!"
+    } else {
+      return true
+    }
+  }
+}
+
+// function validateDepartmentIDExists(str) {
+//   if (str == '') {
+//     return "This cannot be blank!"
+//   } else {
+//     if (!validateNumber(str)) {
+//       return "That is not a number!"
+//     }
+//     queryStr = "select id,name from department where id = ?"
+//     var conn = getSQLConnection();
+//     // console.log(queryStr + " // " + str)
+//     conn.query(queryStr, str, function (err, res) {
+//       if (err) throw err;
+//       // console.log(err)
+//       // console.log(res)
+//       if (res.length = 0) return "Department ID not found!";
+//       conn.end();
+//       return true;
+//     })
+//   }
+// }
+
+// end validation functions
+
 
 start();
 mainMenu();
@@ -131,7 +221,10 @@ function CRUDdepartment() {
     .then(function (answer) {
       switch (answer.choice) {
         case 'Show All Departments':
-          readDepartment();
+          let promise = readDepartment();
+          promise.then(script1 => {
+            CRUDdepartment();
+          })
           break;
         case 'Create New Department':
           createDepartment();
@@ -147,6 +240,8 @@ function CRUDdepartment() {
       }
     });
 }
+
+//--- role---
 
 function CRUDrole() {
   // CRUD = create / read / update / delete
@@ -168,13 +263,18 @@ function CRUDrole() {
     .then(function (answer) {
       switch (answer.choice) {
         case 'Show All Roles':
-          readRole();
+          let promise = readRole();
+          promise.then(script1 => {
+            CRUDrole();
+          })
           break;
         case 'Create New Role':
-          createRole();
+          readDepartment().then(x =>
+            createRole())
           break;
         case 'Update Existing Role':
-          updateRole();
+          readDepartment().then(x =>
+            updateRole())
           break;
         case 'Delete Existing Role':
           deleteRole();
@@ -183,6 +283,7 @@ function CRUDrole() {
           mainMenu();
       }
     });
+
 }
 
 function specialReports() {
@@ -219,83 +320,393 @@ function specialReports() {
 // CRUD employee
 
 function readEmployee() {
-  console.log("--- readEmployee ---")
-
-  CRUDemployee();
+  // display all employees
+  console.log("@readEmployee")
+  queryStr = "select first,last,role_id,manager_id from employee"
+  // var conn = getSQLConnection();
+  const db = makeDb(config)
+  try {
+    res = await db.query(queryStr)
+    console.log("---" + res.length + " records found ---")
+    var table = new Table({
+      head: ['id', 'first_name', 'last_name', 'role_id', 'manager_id'],
+      colWidths: [5, 20, 20, 5]
+    })
+    res.forEach((row) => {
+      table.push([row.id, row.first_name, row.last_name, row.manager_id])
+    })
+    console.log(table.toString());
+    console.log("---" + res.length + " records shown ---")
+  } catch (err) {
+    //what error?
+    throw ("error in readEmployee", err)
+  } finally {
+    await db.close();
+  }
 }
 
 function createEmployee() {
-  console.log("--- createEmployee ---")
-
-  CRUDemployee();
+  console.log("@createEmployee")
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "fname",
+        message: "Enter Employee First Name? ",
+        validate: validateNonBlank
+      },
+      {
+        type: "input",
+        name: "lname",
+        message: "Enter Employee Surname? ",
+        validate: validateNonBlank
+      },
+      {
+        type: "input",
+        name: "roleID",
+        message: "Enter Role ID? ",
+        validate: validateInteger
+      },
+      {
+        type: "input",
+        name: "managerID",
+        message: "Enter Manager ID? ",
+        validate: validateNonBlank
+      }
+    ])
+    .then(function (answer) {
+      queryStr = "insert into employee (first_name,last_name,role_id,manager_id) value (?,?,?,?)"
+      var conn = getSQLConnection();
+      conn.query(queryStr, [answer.first_name, answer.last_name, answer.role_id, manager_id], function (err, res) {
+        if (err) throw err;
+        conn.end()
+        readEmployee();
+        CRUDemployee();
+      })
+    }
+    )
 }
 
 function updateEmployee() {
-  console.log("--- updateEmployee ---")
-
-  CRUDemployee();
+  console.log("@updateEmployee")
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "updID",
+        message: "Enter employee id to update? ",
+        validate: validateNumber
+        // validateDepartmentIDExists
+      },
+      {
+        type: "input",
+        name: "fname",
+        message: "Enter Employee First Name? ",
+        validate: validateNonBlank
+      },
+      {
+        type: "input",
+        name: "lname",
+        message: "Enter Employee Surname? ",
+        validate: validateNonBlank
+      },
+      {
+        type: "input",
+        name: "roleID",
+        message: "Enter Role ID? ",
+        validate: validateInteger
+      },
+      {
+        type: "input",
+        name: "managerID",
+        message: "Enter Manager ID? ",
+        validate: validateNonBlank
+      }
+    ])
+    .then(function (answer) {
+      queryStr = "update employee set first_name=?,last_name=?,role_id=?,manager_id=? where id=?"
+      var conn = getSQLConnection();
+      conn.query(queryStr, [answer.fname, answer.lname, answer.roleID, answer.managerID, answer.updID], function (err, res) {
+        if (err) throw err;
+        conn.end();
+        readEmployee();
+        CRUDemployee();
+      })
+    }
+    )
 }
 
 function deleteEmployee() {
-  console.log("--- deleteEmployee ---")
-
-  CRUDemployee();
+  console.log("@deleteEmployee")
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "delID",
+        message: "Enter employee id to delete? ",
+        validate: validateNumber
+        // validateDepartmentIDExists
+      }
+    ])
+    .then(function (answer) {
+      queryStr = "delete from employee where id = ?"
+      // console.log(answer)
+      var conn = getSQLConnection();
+      // console.log(answer.delDepartment)
+      conn.query(queryStr, answer.delID, function (err, res) {
+        if (err) throw err;
+        conn.end();
+        readEmployee();
+        CRUDemployee();
+      })
+    }
+    )
 }
 
 
 
 // CRUD department
-
-function readDepartment() {
-  console.log("--- readDepartment ---")
-
-  CRUDdepartment();
+async function readDepartment() {
+  // display all departments
+  // table only has two columsn, id and name
+  console.log("@readDepartment")
+  queryStr = "select id,name from department"
+  // var conn = getSQLConnection();
+  const db = makeDb(config)
+  try {
+    res = await db.query(queryStr)
+    console.log("---" + res.length + " records found ---")
+    var table = new Table({
+      head: ['id', 'name'],
+      colWidths: [10, 30]
+    })
+    res.forEach((row) => {
+      table.push([row.id, row.name])
+    })
+    console.log(table.toString());
+    console.log("---" + res.length + " records shown ---")
+  } catch (err) {
+    //what error?
+    throw ("error in readDepartment", err)
+  } finally {
+    await db.close();
+  }
 }
 
 function createDepartment() {
-  console.log("--- createDepartment ---")
-
-  CRUDdepartment();
+  console.log("@createDepartment")
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "newDepartment",
+        message: "Enter new department name? ",
+        validate: validateDepartmentNameOk
+      }
+    ])
+    .then(function (answer) {
+      queryStr = "insert into department (name) value (?)"
+      var conn = getSQLConnection();
+      conn.query(queryStr, answer.newDepartment, function (err, res) {
+        if (err) throw err;
+        conn.end()
+        readDepartment();
+        CRUDdepartment();
+      })
+    }
+    )
 }
 
 function updateDepartment() {
-  console.log("--- updateDepartment ---")
-
-  CRUDdepartment();
+  console.log("@updateDepartment")
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "updid",
+        message: "Enter department id to update? ",
+        validate: validateNumber
+      },
+      {
+        type: "input",
+        name: "updDepartment",
+        message: "Enter updated department name? ",
+        validate: validateDepartmentNameOk
+      }
+    ])
+    .then(function (answer) {
+      queryStr = "update department set name=? where id=?"
+      var conn = getSQLConnection();
+      conn.query(queryStr, [answer.updDepartment, answer.updid], function (err, res) {
+        if (err) throw err;
+        conn.end();
+        readDepartment();
+        CRUDdepartment();
+      })
+    }
+    )
 }
 
 function deleteDepartment() {
-  console.log("--- deleteDepartment ---")
-
-  CRUDdepartment();
+  console.log("@deleteDepartment")
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "delDepartment",
+        message: "Enter department id to delete? ",
+        validate: validateNumber
+        // validateDepartmentIDExists
+      }
+    ])
+    .then(function (answer) {
+      queryStr = "delete from department where id = ?"
+      // console.log(answer)
+      var conn = getSQLConnection();
+      // console.log(answer.delDepartment)
+      conn.query(queryStr, answer.delDepartment, function (err, res) {
+        if (err) throw err;
+        conn.end();
+        readDepartment();
+        CRUDdepartment();
+      })
+    }
+    )
 }
 
 
 
 // CRUD role
 
-function readRole() {
-  console.log("--- readRole ---")
-
-  CRUDrole();
+async function readRole() {
+  // display all roles
+  // table only has two columsn, id and name
+  console.log("@readRole")
+  queryStr = "select r.id,title,salary,department_id from role r"
+  // var conn = getSQLConnection();
+  const db = makeDb(config)
+  try {
+    res = await db.query(queryStr)
+    console.log("---" + res.length + " records found ---")
+    var table = new Table({
+      head: ['id', 'title', 'salary', 'department_id'],
+      colWidths: [6, 25, 10, 6]
+    })
+    res.forEach((row) => {
+      table.push([row.id, row.title, row.salary, row.department_id])
+    })
+    console.log(table.toString());
+    console.log("---" + res.length + " records shown ---")
+  } catch (err) {
+    throw ("error in readRole ", err)
+  } finally {
+    await db.close();
+  }
 }
 
 function createRole() {
-  console.log("--- createRole ---")
-
-  CRUDrole();
+  console.log("@createRole")
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "title",
+        message: "Enter Title? ",
+        validate: validateNonBlank
+      },
+      {
+        type: "input",
+        name: "salary",
+        message: "Enter Salary? ",
+        validate: validateInteger
+      },
+      {
+        type: "input",
+        name: "departmentID",
+        message: "Enter DepartmentID? ",
+        validate: validateInteger
+      }
+    ])
+    .then(function (answer) {
+      queryStr = "insert into role (title,salary,department_id) value (?,?,?)"
+      var conn = getSQLConnection();
+      conn.query(queryStr, [answer.title, answer.salary, answer.departmentID], function (err, res) {
+        if (err) throw err;
+        conn.end()
+        readRole();
+        CRUDrole();
+      })
+    }
+    )
 }
 
 function updateRole() {
-  console.log("--- updateRole ---")
-
-  CRUDrole();
+  console.log("@updateRole")
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "updid",
+        message: "Enter role id to update? ",
+        validate: validateNumber
+      },
+      {
+        type: "input",
+        name: "title",
+        message: "Enter updated title? ",
+        validate: validateNonBlank
+      },
+      {
+        type: "input",
+        name: "salary",
+        message: "Enter Salary? ",
+        validate: validateInteger
+      },
+      {
+        type: "input",
+        name: "departmentID",
+        message: "Enter DepartmentID? ",
+        validate: validateInteger
+      }
+    ])
+    .then(function (answer) {
+      queryStr = "update role set title=?,salary=?,department_id=? where id=?"
+      var conn = getSQLConnection();
+      conn.query(queryStr, [answer.title, answer.salary, answer.departmentID, answer.updid], function (err, res) {
+        if (err) throw err;
+        conn.end();
+        readRole();
+        CRUDrole();
+      })
+    }
+    )
 }
 
 function deleteRole() {
-  console.log("--- deleteRole ---")
-
-  CRUDrole();
+  console.log("@deleteRole")
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "delRole",
+        message: "Enter role id to delete? ",
+        validate: validateNumber
+        // validateDepartmentIDExists
+      }
+    ])
+    .then(function (answer) {
+      queryStr = "delete from role where id = ?"
+      // console.log(answer)
+      var conn = getSQLConnection();
+      // console.log(answer.delDepartment)
+      conn.query(queryStr, answer.delRole, function (err, res) {
+        if (err) throw err;
+        conn.end();
+        readRole();
+        CRUDrole();
+      })
+    }
+    )
 }
 
 
