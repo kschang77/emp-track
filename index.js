@@ -13,17 +13,6 @@ const Table = require("cli-table")
 //  ... run some query with myConn.query(...)
 // myConn.end();
 
-function getSQLConnection() {
-  var params = {
-    host: "localhost",
-    port: 3306,
-    user: "root",
-    password: "password",
-    database: "employeedb"
-  }
-  return mysql.createConnection(params);
-}
-
 // trying alternate syntax to test db code
 
 config = {
@@ -82,27 +71,75 @@ function validateDepartmentNameOk(str) {
   }
 }
 
-// function validateDepartmentIDExists(str) {
-//   if (str == '') {
-//     return "This cannot be blank!"
-//   } else {
-//     if (!validateNumber(str)) {
-//       return "That is not a number!"
-//     }
-//     queryStr = "select id,name from department where id = ?"
-//     var conn = getSQLConnection();
-//     // console.log(queryStr + " // " + str)
-//     conn.query(queryStr, str, function (err, res) {
-//       if (err) throw err;
-//       // console.log(err)
-//       // console.log(res)
-//       if (res.length = 0) return "Department ID not found!";
-//       conn.end();
-//       return true;
-//     })
-//   }
-// }
+async function validateDepartmentID(str) {
+  if (str == '') {
+    return "This cannot be blank!"
+  }
+  if (!validateNumber(str)) {
+    return "That is not a number!"
+  }
+  // console.log("validateDepartmentID " + str)
+  queryStr = "select id,name from department where id = ?"
+  const db = makeDb(config)
+  try {
+    res = await db.query(queryStr, str);
+    // console.log("res ", res)
+    if (res.length === 0) {
+      return "Department ID not found!";
+    }
+    return true;
+  } catch (err) {
+    throw ("error in validateDepartmentID " + str + " ", err)
+  } finally {
+    await db.close()
+  }
+}
 
+async function validateEmployeeID(str) {
+  if (str == '') {
+    return "This cannot be blank!"
+  }
+  if (!validateNumber(str)) {
+    return "That is not a number!"
+  }
+  queryStr = "select * from employee where id = ?"
+  const db = makeDb(config)
+  try {
+    res = await db.query(queryStr, str);
+    // console.log("res ", res)
+    if (res.length === 0) {
+      return "Employee ID not found!";
+    }
+    return true;
+  } catch (err) {
+    throw ("error in validateEmployeeID " + str + " ", err)
+  } finally {
+    await db.close()
+  }
+}
+
+async function validateRoleID(str) {
+  if (str == '') {
+    return "This cannot be blank!"
+  }
+  if (!validateNumber(str)) {
+    return "That is not a number!"
+  }
+  queryStr = "select * from role where id = ?"
+  const db = makeDb(config)
+  try {
+    res = await db.query(queryStr, str);
+    // console.log("res ", res)
+    if (res.length === 0) {
+      return "Role ID not found!";
+    }
+    return true;
+  } catch (err) {
+    throw ("error in validateRoleID " + str + " ", err)
+  } finally {
+    await db.close()
+  }
+}
 // end validation functions
 
 
@@ -184,16 +221,29 @@ function CRUDemployee() {
     .then(function (answer) {
       switch (answer.choice) {
         case 'Show All Employees':
-          readEmployee();
+          let promiseE1 = readEmployee();
+          promiseE1.then(script1 => {
+            CRUDemployee();
+          })
           break;
         case 'Create New Employee':
-          createEmployee();
+          let promiseE2 = createEmployee();
+          promiseE2.then(script1 => {
+            CRUDemployee();
+          })
           break;
         case 'Update Existing Employee':
           updateEmployee();
+          let promiseE3 = updateEmployee();
+          promiseE3.then(script1 => {
+            CRUDemployee();
+          })
           break;
         case 'Delete Existing Employee':
-          deleteEmployee();
+          let promiseE4 = deleteEmployee();
+          promiseE4.then(script1 => {
+            CRUDemployee();
+          })
           break;
         case 'Return to Main Menu':
           mainMenu();
@@ -240,7 +290,7 @@ function CRUDdepartment() {
           break;
         case 'Delete Existing Department':
           let promise4 = deleteDepartment();
-          promise4.then(script1 => {
+          promise4.then(script4 => {
             CRUDdepartment();
           })
           break;
@@ -248,14 +298,11 @@ function CRUDdepartment() {
           mainMenu();
       }
     });
-  // CRUDdepartment();
 }
 
 //--- role---
-
 function CRUDrole() {
   // CRUD = create / read / update / delete
-
   inquirer
     .prompt([
       {
@@ -273,21 +320,28 @@ function CRUDrole() {
     .then(function (answer) {
       switch (answer.choice) {
         case 'Show All Roles':
-          let promise = readRole();
-          promise.then(script1 => {
+          let promiseR1 = readRole();
+          promiseR1.then(script1 => {
             CRUDrole();
           })
           break;
         case 'Create New Role':
-          readDepartment().then(x =>
-            createRole())
+          let promiseR2 = createRole();
+          promiseR2.then(script1 => {
+            CRUDrole();
+          })
           break;
         case 'Update Existing Role':
-          readDepartment().then(x =>
-            updateRole())
+          let promiseR3 = updateRole();
+          promiseR3.then(script1 => {
+            CRUDrole();
+          })
           break;
         case 'Delete Existing Role':
-          deleteRole();
+          let promiseR4 = deleteRole();
+          promiseR4.then(script1 => {
+            CRUDrole();
+          })
           break;
         case 'Return to Main Menu':
           mainMenu();
@@ -355,10 +409,10 @@ async function readEmployee() {
   }
 }
 
-function createEmployee() {
+async function createEmployee() {
   console.log("@createEmployee")
-  inquirer
-    .prompt([
+  try {
+    const ans = await inquirer.prompt([
       {
         type: "input",
         name: "fname",
@@ -381,32 +435,33 @@ function createEmployee() {
         type: "input",
         name: "managerID",
         message: "Enter Manager ID? ",
-        validate: validateNonBlank
+        validate: validateEmployeeID
       }
     ])
-    .then(function (answer) {
-      queryStr = "insert into employee (first_name,last_name,role_id,manager_id) value (?,?,?,?)"
-      var conn = getSQLConnection();
-      conn.query(queryStr, [answer.first_name, answer.last_name, answer.role_id, manager_id], function (err, res) {
-        if (err) throw err;
-        conn.end()
-        readEmployee();
-        CRUDemployee();
-      })
+
+    queryStr = "insert into employee (first_name,last_name,role_id,manager_id) value (?,?,?,?)"
+    const db = makeDb(config)
+    try {
+      res = await db.query(queryStr, [ans.first_name, ans.last_name, ans.role_id, ans.manager_id])
+    } catch (err) {
+      throw ("error in createEmployee query ", err)
+    } finally {
+      await db.close()
     }
-    )
+  } catch (err) {
+    throw ("Error in createEmployee inquirer ", err)
+  }
 }
 
-function updateEmployee() {
+async function updateEmployee() {
   console.log("@updateEmployee")
-  inquirer
-    .prompt([
+  try {
+    const ans = await inquirer.prompt([
       {
         type: "input",
         name: "updID",
         message: "Enter employee id to update? ",
-        validate: validateNumber
-        // validateDepartmentIDExists
+        validate: validateEmployeeID
       },
       {
         type: "input",
@@ -430,49 +485,52 @@ function updateEmployee() {
         type: "input",
         name: "managerID",
         message: "Enter Manager ID? ",
-        validate: validateNonBlank
+        validate: validateEmployeeID
       }
     ])
-    .then(function (answer) {
-      queryStr = "update employee set first_name=?,last_name=?,role_id=?,manager_id=? where id=?"
-      var conn = getSQLConnection();
-      conn.query(queryStr, [answer.fname, answer.lname, answer.roleID, answer.managerID, answer.updID], function (err, res) {
-        if (err) throw err;
-        conn.end();
-        readEmployee();
-        CRUDemployee();
-      })
+
+    queryStr = "update employee set first_name=?,last_name=?,role_id=?,manager_id=? where id=?"
+
+    const db = makeDb(config)
+    try {
+      res = db.query(queryStr, [ans.fname, ans.lname, ans.roleID, ans.managerID, ans.updID]);
+    } catch (err) {
+      throw ("error in updateEmployee query ", err)
+    } finally {
+      await db.close()
     }
-    )
+  } catch (err) {
+    throw ("error in updateEmployee inquirer ", err)
+  }
 }
 
-function deleteEmployee() {
+async function deleteEmployee() {
   console.log("@deleteEmployee")
-  inquirer
-    .prompt([
+  try {
+    const ans = await inquirer.prompt([
       {
         type: "input",
         name: "delID",
         message: "Enter employee id to delete? ",
-        validate: validateNumber
-        // validateDepartmentIDExists
+        validate: validateEmployeeID
       }
     ])
-    .then(function (answer) {
-      queryStr = "delete from employee where id = ?"
-      // console.log(answer)
-      var conn = getSQLConnection();
-      // console.log(answer.delDepartment)
-      conn.query(queryStr, answer.delID, function (err, res) {
-        if (err) throw err;
-        conn.end();
-        readEmployee();
-        CRUDemployee();
-      })
-    }
-    )
-}
 
+    queryStr = "delete from employee where id = ?"
+
+    const db = makeDb(config);
+
+    try {
+      res = db.query(queryStr, ans.delID);
+    } catch (err) {
+      throw ("error in deleteEmployee query ", err)
+    } finally {
+      await db.close()
+    }
+  } catch (err) {
+    throw ("error in deleteEmployee inquirer ", err)
+  }
+}
 
 
 // CRUD department
@@ -537,7 +595,7 @@ async function updateDepartment() {
         type: "input",
         name: "updid",
         message: "Enter department id to update? ",
-        validate: validateNumber
+        validate: validateDepartmentID
       },
       {
         type: "input",
@@ -550,7 +608,7 @@ async function updateDepartment() {
     queryStr = "update department set name=? where id=?"
     const db = makeDb(config)
     try {
-      res = db.query(queryStr, [ans.updDepartment, ans.updid]);
+      res = await db.query(queryStr, [ans.updDepartment, ans.updid]);
     } catch (err) {
       throw ("error in updateDepartment query", err)
     } finally {
@@ -570,15 +628,14 @@ async function deleteDepartment() {
         type: "input",
         name: "delDepartment",
         message: "Enter department id to delete? ",
-        validate: validateNumber
-        // validateDepartmentIDExists
+        validate: validateDepartmentID
       }
     ])
 
     queryStr = "delete from department where id = ?"
     const db = makeDb(config);
     try {
-      res = db.query(queryStr, ans.delDepartment);
+      res = await db.query(queryStr, ans.delDepartment);
     } catch (err) {
       throw ("error in deleteDepartment query", err)
     } finally {
@@ -588,8 +645,6 @@ async function deleteDepartment() {
     throw ("error in deleteDepartment Inquirer", err)
   }
 }
-
-
 
 // CRUD role
 
@@ -639,7 +694,7 @@ async function createRole() {
         type: "input",
         name: "departmentID",
         message: "Enter DepartmentID? ",
-        validate: validateInteger
+        validate: validateDepartmentID
       }
     ])
 
@@ -666,7 +721,7 @@ async function updateRole() {
         type: "input",
         name: "updid",
         message: "Enter role id to update? ",
-        validate: validateNumber
+        validate: validateRoleID
       },
       {
         type: "input",
@@ -684,7 +739,7 @@ async function updateRole() {
         type: "input",
         name: "departmentID",
         message: "Enter DepartmentID? ",
-        validate: validateInteger
+        validate: validateDepartmentID
       }
     ])
 
@@ -711,8 +766,7 @@ async function deleteRole() {
         type: "input",
         name: "delRole",
         message: "Enter role id to delete? ",
-        validate: validateNumber
-        // validateDepartmentIDExists
+        validate: validateRoleID
       }
     ])
 
