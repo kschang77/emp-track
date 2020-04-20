@@ -233,10 +233,16 @@ function CRUDdepartment() {
           })
           break;
         case 'Update Existing Department':
-          updateDepartment();
+          let promise3 = updateDepartment();
+          promise3.then(script3 => {
+            CRUDdepartment();
+          })
           break;
         case 'Delete Existing Department':
-          deleteDepartment();
+          let promise4 = deleteDepartment();
+          promise4.then(script1 => {
+            CRUDdepartment();
+          })
           break;
         case 'Return to Main Menu':
           mainMenu();
@@ -523,7 +529,7 @@ async function createDepartment() {
   }
 }
 
-function updateDepartment() {
+async function updateDepartment() {
   console.log("@updateDepartment")
   try {
     const ans = await inquirer.prompt([
@@ -544,7 +550,7 @@ function updateDepartment() {
     queryStr = "update department set name=? where id=?"
     const db = makeDb(config)
     try {
-      res = db.query(queryStr, [answer.updDepartment, answer.updid]);
+      res = db.query(queryStr, [ans.updDepartment, ans.updid]);
     } catch (err) {
       throw ("error in updateDepartment query", err)
     } finally {
@@ -556,10 +562,10 @@ function updateDepartment() {
   }
 }
 
-function deleteDepartment() {
+async function deleteDepartment() {
   console.log("@deleteDepartment")
-  inquirer
-    .prompt([
+  try {
+    const ans = await inquirer.prompt([
       {
         type: "input",
         name: "delDepartment",
@@ -568,19 +574,19 @@ function deleteDepartment() {
         // validateDepartmentIDExists
       }
     ])
-    .then(function (answer) {
-      queryStr = "delete from department where id = ?"
-      // console.log(answer)
-      var conn = getSQLConnection();
-      // console.log(answer.delDepartment)
-      conn.query(queryStr, answer.delDepartment, function (err, res) {
-        if (err) throw err;
-        conn.end();
-        readDepartment();
-        CRUDdepartment();
-      })
+
+    queryStr = "delete from department where id = ?"
+    const db = makeDb(config);
+    try {
+      res = db.query(queryStr, ans.delDepartment);
+    } catch (err) {
+      throw ("error in deleteDepartment query", err)
+    } finally {
+      await db.close()
     }
-    )
+  } catch (err) {
+    throw ("error in deleteDepartment Inquirer", err)
+  }
 }
 
 
@@ -613,10 +619,10 @@ async function readRole() {
   }
 }
 
-function createRole() {
+async function createRole() {
   console.log("@createRole")
-  inquirer
-    .prompt([
+  try {
+    const ans = await inquirer.prompt([
       {
         type: "input",
         name: "title",
@@ -636,23 +642,26 @@ function createRole() {
         validate: validateInteger
       }
     ])
-    .then(function (answer) {
-      queryStr = "insert into role (title,salary,department_id) value (?,?,?)"
-      var conn = getSQLConnection();
-      conn.query(queryStr, [answer.title, answer.salary, answer.departmentID], function (err, res) {
-        if (err) throw err;
-        conn.end()
-        readRole();
-        CRUDrole();
-      })
+
+    queryStr = "insert into role (title,salary,department_id) value (?,?,?)"
+
+    const db = makeDb(config)
+    try {
+      res = await db.query(queryStr, [ans.title, ans.salary, ans.departmentID])
+    } catch (err) {
+      throw ("error in createRole query", err)
+    } finally {
+      await db.close()
     }
-    )
+  } catch (err) {
+    throw ("error in createRole inquirer", err)
+  }
 }
 
-function updateRole() {
+async function updateRole() {
   console.log("@updateRole")
-  inquirer
-    .prompt([
+  try {
+    const ans = await inquirer.prompt([
       {
         type: "input",
         name: "updid",
@@ -678,23 +687,26 @@ function updateRole() {
         validate: validateInteger
       }
     ])
-    .then(function (answer) {
-      queryStr = "update role set title=?,salary=?,department_id=? where id=?"
-      var conn = getSQLConnection();
-      conn.query(queryStr, [answer.title, answer.salary, answer.departmentID, answer.updid], function (err, res) {
-        if (err) throw err;
-        conn.end();
-        readRole();
-        CRUDrole();
-      })
+
+    queryStr = "update role set title=?,salary=?,department_id=? where id=?"
+
+    const db = makeDb(config)
+    try {
+      res = db.query(queryStr, [ans.title, ans.salary, ans.departmentID, ans.updid])
+    } catch (err) {
+      throw ("error in updateRole query", err)
+    } finally {
+      await db.close()
     }
-    )
+  } catch (err) {
+    throw ("error in updateRole inquirer", err)
+  }
 }
 
-function deleteRole() {
+async function deleteRole() {
   console.log("@deleteRole")
-  inquirer
-    .prompt([
+  try {
+    const ans = await inquirer.prompt([
       {
         type: "input",
         name: "delRole",
@@ -703,19 +715,20 @@ function deleteRole() {
         // validateDepartmentIDExists
       }
     ])
-    .then(function (answer) {
-      queryStr = "delete from role where id = ?"
-      // console.log(answer)
-      var conn = getSQLConnection();
-      // console.log(answer.delDepartment)
-      conn.query(queryStr, answer.delRole, function (err, res) {
-        if (err) throw err;
-        conn.end();
-        readRole();
-        CRUDrole();
-      })
+
+    queryStr = "delete from role where id = ?"
+
+    const db = makeDb(config);
+    try {
+      res = db.query(queryStr, ans.delRole)
+    } catch (err) {
+      throw ("error in deleteRole query", err)
+    } finally {
+      await db.close()
     }
-    )
+  } catch (err) {
+    throw ("error in deleteRole inquirer", err)
+  }
 }
 
 
