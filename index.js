@@ -2,18 +2,19 @@
 
 const mysql = require("mysql");
 const inquirer = require("inquirer")
+const menu = require("inquirer-menu")
 const util = require('util');
 const figlet = require("figlet")
 const chalk = require("chalk")
 const Table = require("cli-table")
+const clear = require('clear')
 
-// use this to open a connect as we need it
-// EX 
-// myConn = getSQLConnection()
-//  ... run some query with myConn.query(...)
-// myConn.end();
 
-// trying alternate syntax to test db code
+// progress so far: all functions work except final report. 
+// HOWEVER, menus are glitch-y, and I can't find the problems. 
+// All code were rewritten using async/wait, didn't help
+// trying alternate mainmenu with inquirer-menu, using branch
+
 
 config = {
   host: "localhost",
@@ -96,12 +97,15 @@ async function validateDepartmentID(str) {
 }
 
 async function validateEmployeeID(str) {
-  if (str == '') {
+  if (str === '') {
     return "This cannot be blank!"
   }
   if (!validateNumber(str)) {
     return "That is not a number!"
   }
+  // if (str === "0") {
+  //   return true;  // 0 = self, do NOT check DB
+  // }
   queryStr = "select * from employee where id = ?"
   const db = makeDb(config)
   try {
@@ -142,10 +146,6 @@ async function validateRoleID(str) {
 }
 // end validation functions
 
-
-start();
-mainMenu();
-
 // start is just some fancy presentation
 function start() {
   console.log(chalk.yellow(figlet.textSync('Emp-Track', {
@@ -164,220 +164,123 @@ function end() {
   console.log("")
 }
 
-// mainMenu presents the 5 choices
-function mainMenu() {
-  inquirer
-    .prompt([
-      {
-        type: 'list',
-        name: 'choice',
-        message: 'Choose? ',
-        choices: [
-          "Employee - create / update / read / delete",
-          "Department - create / update / read / delete",
-          "Role - create / update / read / delete",
-          "Special Employee Reports",
-          "End Program"]
-      }
-    ])
-    .then(function (answer) {
-      switch (answer.choice) {
-        case 'Employee - create / update / read / delete':
-          CRUDemployee();
-          break;
-        case 'Department - create / update / read / delete':
-          CRUDdepartment();
-          break;
-        case 'Role - create / update / read / delete':
-          CRUDrole();
-          break;
-        case 'Special Employee Reports':
-          specialReports();
-          break;
-        case 'End Program':
-          end();
-          process.exit(0);
-      }
-    });
+
+// new employee menu
+
+const employeeMenu = {
+  message: 'Employee Menu',
+  choices: {
+    "Show All Employees": function () {
+      // console.log("calling readEmployee")
+      readEmployee()
+      // clear({ fullClear: false })
+      return;
+    },
+    "Create New Employee": function () {
+      createEmployee()
+      // clear({ fullClear: false })
+      return
+    },
+    "Update Existing Employees": function () {
+      updateEmployee()
+      // clear({ fullClear: false })
+      return
+    },
+    "Delete Employee": function () {
+      deleteEmployee()
+      // clear({ fullClear: false })
+      return
+    }
+  }
+};
+
+const departmentMenu = {
+  message: 'Department Menu',
+  choices: {
+    "Show All Departments": function () {
+      // console.log("calling readEmployee")
+      readDepartment()
+      // clear({ fullClear: false })
+      return;
+    },
+    "Create New Department": function () {
+      createDepartment()
+      // clear({ fullClear: false })
+      return
+    },
+    "Update Existing Department": function () {
+      updateDepartment()
+      // clear({ fullClear: false })
+      return
+    },
+    "Delete Department": function () {
+      deleteDepartment()
+      // clear({ fullClear: false })
+      return
+    }
+  }
+};
+
+const roleMenu = {
+  message: 'Role Menu',
+  choices: {
+    "Show All Roles": function () {
+      // console.log("calling readEmployee")
+      readRole()
+      return;
+    },
+    "Create New Role": function () {
+      createRole()
+      return
+    },
+    "Update Existing Role": function () {
+      updateRole()
+      return
+    },
+    "Delete Role": function () {
+      deleteRole()
+      return
+    }
+  }
+};
+
+const reportMenu = {
+  message: "Report Menu",
+  choices: {
+    "Report Employees by Manager": function () {
+      reportEmployeeByManager()
+      return
+    },
+    "Report Department Salary Budget": function () {
+      reportDepartmentSalary()
+      return
+    }
+  }
 }
 
-function CRUDemployee() {
-  // CRUD = create / read / update / delete
+function createMenu() {
+  return {
+    message: 'Main Menu',
+    choices: {
+      "Employee Create/Read/Update/Delete": employeeMenu,
+      "Department Create/Read/Update/Delete": departmentMenu,
+      "Role Create/Read/Update/Delete": roleMenu,
+      "Special Reports": reportMenu
+    }
+  };
+};
 
-  inquirer
-    .prompt([
-      {
-        type: "list",
-        name: "choice",
-        message: "Choose?",
-        choices: [
-          "Show All Employees",
-          "Create New Employee",
-          "Update Existing Employee",
-          "Delete Existing Employee",
-          "Return to Main Menu"]
-      }
-    ])
-    .then(function (answer) {
-      switch (answer.choice) {
-        case 'Show All Employees':
-          let promiseE1 = readEmployee();
-          promiseE1.then(script1 => {
-            CRUDemployee();
-          })
-          break;
-        case 'Create New Employee':
-          let promiseE2 = createEmployee();
-          promiseE2.then(script1 => {
-            CRUDemployee();
-          })
-          break;
-        case 'Update Existing Employee':
-          updateEmployee();
-          let promiseE3 = updateEmployee();
-          promiseE3.then(script1 => {
-            CRUDemployee();
-          })
-          break;
-        case 'Delete Existing Employee':
-          let promiseE4 = deleteEmployee();
-          promiseE4.then(script1 => {
-            CRUDemployee();
-          })
-          break;
-        case 'Return to Main Menu':
-          mainMenu();
-      }
-    });
-}
 
-function CRUDdepartment() {
-  // CRUD = create / read / update / delete
-
-  inquirer
-    .prompt([
-      {
-        type: "list",
-        name: "choice",
-        message: "Choose?",
-        choices: [
-          "Show All Departments",
-          "Create New Department",
-          "Update Existing Department",
-          "Delete Existing Department",
-          "Return to Main Menu"]
-      }
-    ])
-    .then(function (answer) {
-      switch (answer.choice) {
-        case 'Show All Departments':
-          let promise = readDepartment();
-          promise.then(script1 => {
-            CRUDdepartment();
-          })
-          break;
-        case 'Create New Department':
-          let promise2 = createDepartment();
-          promise2.then(script2 => {
-            CRUDdepartment();
-          })
-          break;
-        case 'Update Existing Department':
-          let promise3 = updateDepartment();
-          promise3.then(script3 => {
-            CRUDdepartment();
-          })
-          break;
-        case 'Delete Existing Department':
-          let promise4 = deleteDepartment();
-          promise4.then(script4 => {
-            CRUDdepartment();
-          })
-          break;
-        case 'Return to Main Menu':
-          mainMenu();
-      }
-    });
-}
-
-//--- role---
-function CRUDrole() {
-  // CRUD = create / read / update / delete
-  inquirer
-    .prompt([
-      {
-        type: "list",
-        name: "choice",
-        message: "Choose?",
-        choices: [
-          "Show All Roles",
-          "Create New Role",
-          "Update Existing Role",
-          "Delete Existing Role",
-          "Return to Main Menu"]
-      }
-    ])
-    .then(function (answer) {
-      switch (answer.choice) {
-        case 'Show All Roles':
-          let promiseR1 = readRole();
-          promiseR1.then(script1 => {
-            CRUDrole();
-          })
-          break;
-        case 'Create New Role':
-          let promiseR2 = createRole();
-          promiseR2.then(script1 => {
-            CRUDrole();
-          })
-          break;
-        case 'Update Existing Role':
-          let promiseR3 = updateRole();
-          promiseR3.then(script1 => {
-            CRUDrole();
-          })
-          break;
-        case 'Delete Existing Role':
-          let promiseR4 = deleteRole();
-          promiseR4.then(script1 => {
-            CRUDrole();
-          })
-          break;
-        case 'Return to Main Menu':
-          mainMenu();
-      }
-    });
-
-}
-
-function specialReports() {
-  // two special reports
-
-  inquirer
-    .prompt([
-      {
-        type: "list",
-        name: "choice",
-        message: "Choose?",
-        choices: [
-          "Report Employees by Manager",
-          "Report Department Salary Budget",
-          "Return to Main Menu"]
-      }
-    ])
-    .then(function (answer) {
-      switch (answer.choice) {
-        case 'Show All Roles':
-          reportEmployeeByManager();
-          break;
-        case 'Create New Role':
-          reportDepartmentSalary();
-          break;
-        case 'Return to Main Menu':
-          mainMenu();
-      }
-    });
-}
+// main program loop is here
+clear();
+start()
+menu(createMenu)
+  .then(function () {
+    end();
+  })
+  .catch(function (err) {
+    console.log(err.stack);
+  });
 
 //----- main menu complete
 
@@ -386,21 +289,29 @@ function specialReports() {
 async function readEmployee() {
   // display all employees
   console.log("@readEmployee")
-  queryStr = "select first,last,role_id,manager_id from employee"
+  queryStr = "select * from employee"
   // var conn = getSQLConnection();
   const db = makeDb(config)
   try {
+    // clear();
     res = await db.query(queryStr)
     console.log("---" + res.length + " records found ---")
     var table = new Table({
       head: ['id', 'first_name', 'last_name', 'role_id', 'manager_id'],
-      colWidths: [5, 20, 20, 5]
+      colWidths: [5, 20, 20, 5, 5]
     })
     res.forEach((row) => {
-      table.push([row.id, row.first_name, row.last_name, row.manager_id])
+      table.push([row.id, row.first_name, row.last_name, row.role_id, row.manager_id])
     })
     console.log(table.toString());
-    console.log("---" + res.length + " records shown ---")
+    // console.log("---" + res.length + " records shown ---")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
   } catch (err) {
     //what error?
     throw ("error in readEmployee", err)
@@ -410,8 +321,10 @@ async function readEmployee() {
 }
 
 async function createEmployee() {
-  console.log("@createEmployee")
+  // console.log("@createEmployee")
   try {
+    clear();
+
     const ans = await inquirer.prompt([
       {
         type: "input",
@@ -429,12 +342,12 @@ async function createEmployee() {
         type: "input",
         name: "roleID",
         message: "Enter Role ID? ",
-        validate: validateInteger
+        validate: validateRoleID
       },
       {
         type: "input",
         name: "managerID",
-        message: "Enter Manager ID? ",
+        message: "Enter Manager ID?",
         validate: validateEmployeeID
       }
     ])
@@ -442,7 +355,17 @@ async function createEmployee() {
     queryStr = "insert into employee (first_name,last_name,role_id,manager_id) value (?,?,?,?)"
     const db = makeDb(config)
     try {
-      res = await db.query(queryStr, [ans.first_name, ans.last_name, ans.role_id, ans.manager_id])
+      // if (ans.managerID === 0) {
+      //   ans.managerID = 1
+      // }
+      res = await db.query(queryStr, [ans.fname, ans.lname, ans.roleID, ans.managerID])
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
     } catch (err) {
       throw ("error in createEmployee query ", err)
     } finally {
@@ -454,7 +377,7 @@ async function createEmployee() {
 }
 
 async function updateEmployee() {
-  console.log("@updateEmployee")
+  // console.log("@updateEmployee")
   try {
     const ans = await inquirer.prompt([
       {
@@ -479,7 +402,7 @@ async function updateEmployee() {
         type: "input",
         name: "roleID",
         message: "Enter Role ID? ",
-        validate: validateInteger
+        validate: validateRoleID
       },
       {
         type: "input",
@@ -493,7 +416,14 @@ async function updateEmployee() {
 
     const db = makeDb(config)
     try {
-      res = db.query(queryStr, [ans.fname, ans.lname, ans.roleID, ans.managerID, ans.updID]);
+      res = await db.query(queryStr, [ans.fname, ans.lname, ans.roleID, ans.managerID, ans.updID]);
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
     } catch (err) {
       throw ("error in updateEmployee query ", err)
     } finally {
@@ -505,8 +435,10 @@ async function updateEmployee() {
 }
 
 async function deleteEmployee() {
-  console.log("@deleteEmployee")
+  // console.log("@deleteEmployee")
   try {
+    clear();
+
     const ans = await inquirer.prompt([
       {
         type: "input",
@@ -521,7 +453,14 @@ async function deleteEmployee() {
     const db = makeDb(config);
 
     try {
-      res = db.query(queryStr, ans.delID);
+      res = await db.query(queryStr, ans.delID);
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
     } catch (err) {
       throw ("error in deleteEmployee query ", err)
     } finally {
@@ -542,6 +481,8 @@ async function readDepartment() {
   // var conn = getSQLConnection();
   const db = makeDb(config)
   try {
+    // clear();
+    console.log("");
     res = await db.query(queryStr)
     console.log("---" + res.length + " records found ---")
     var table = new Table({
@@ -552,7 +493,14 @@ async function readDepartment() {
       table.push([row.id, row.name])
     })
     console.log(table.toString());
-    console.log("---" + res.length + " records shown ---")
+    // console.log("---" + res.length + " records shown ---")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
   } catch (err) {
     //what error?
     throw ("error in readDepartment", err)
@@ -564,6 +512,7 @@ async function readDepartment() {
 async function createDepartment() {
   console.log("@createDepartment")
   try {
+    // clear();
     const ans = await inquirer.prompt([
       {
         type: "input",
@@ -576,6 +525,13 @@ async function createDepartment() {
     const db = makeDb(config)
     try {
       res = await db.query(queryStr, ans.newDepartment)
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
     } catch (err) {
       throw ("error in createDepartment query", err)
     } finally {
@@ -588,8 +544,9 @@ async function createDepartment() {
 }
 
 async function updateDepartment() {
-  console.log("@updateDepartment")
+  // console.log("@updateDepartment")
   try {
+    // clear();
     const ans = await inquirer.prompt([
       {
         type: "input",
@@ -609,6 +566,13 @@ async function updateDepartment() {
     const db = makeDb(config)
     try {
       res = await db.query(queryStr, [ans.updDepartment, ans.updid]);
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
     } catch (err) {
       throw ("error in updateDepartment query", err)
     } finally {
@@ -621,8 +585,9 @@ async function updateDepartment() {
 }
 
 async function deleteDepartment() {
-  console.log("@deleteDepartment")
+  // console.log("@deleteDepartment")
   try {
+    // clear();
     const ans = await inquirer.prompt([
       {
         type: "input",
@@ -636,6 +601,13 @@ async function deleteDepartment() {
     const db = makeDb(config);
     try {
       res = await db.query(queryStr, ans.delDepartment);
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
     } catch (err) {
       throw ("error in deleteDepartment query", err)
     } finally {
@@ -666,7 +638,14 @@ async function readRole() {
       table.push([row.id, row.title, row.salary, row.department_id])
     })
     console.log(table.toString());
-    console.log("---" + res.length + " records shown ---")
+    // console.log("---" + res.length + " records shown ---")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
   } catch (err) {
     throw ("error in readRole ", err)
   } finally {
@@ -703,6 +682,13 @@ async function createRole() {
     const db = makeDb(config)
     try {
       res = await db.query(queryStr, [ans.title, ans.salary, ans.departmentID])
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
     } catch (err) {
       throw ("error in createRole query", err)
     } finally {
@@ -747,7 +733,14 @@ async function updateRole() {
 
     const db = makeDb(config)
     try {
-      res = db.query(queryStr, [ans.title, ans.salary, ans.departmentID, ans.updid])
+      res = await db.query(queryStr, [ans.title, ans.salary, ans.departmentID, ans.updid])
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
     } catch (err) {
       throw ("error in updateRole query", err)
     } finally {
@@ -774,7 +767,14 @@ async function deleteRole() {
 
     const db = makeDb(config);
     try {
-      res = db.query(queryStr, ans.delRole)
+      res = await db.query(queryStr, ans.delRole)
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
     } catch (err) {
       throw ("error in deleteRole query", err)
     } finally {
@@ -787,12 +787,51 @@ async function deleteRole() {
 
 
 // -- reports --
-function reportEmployeeByManager() {
-  console.log("--- reportEmployeeByManager ---")
-  // select manager from list, display list of employees
+async function reportEmployeeByManager() {
+  // enter Manager, display list of employees
 
+  console.log("@reportEmployeeByManager")
+  try {
+    const ans = await inquirer.prompt([
+      {
+        type: "input",
+        name: "empID",
+        message: "Enter Manager id to report? ",
+        validate: validateEmployeeID
+      }
+    ])
 
-  specialReports();
+    queryStr = "select * from employee where manager_id = ?"
+
+    const db = makeDb(config);
+
+    try {
+      res = await db.query(queryStr, ans.empID);
+      console.log("---" + res.length + " records found ---")
+      var table = new Table({
+        head: ['id', 'first_name', 'last_name', 'role_id', 'manager_id'],
+        colWidths: [5, 20, 20, 5, 5]
+      })
+      res.forEach((row) => {
+        table.push([row.id, row.first_name, row.last_name, row.role_id, row.manager_id])
+      })
+      console.log(table.toString());
+      console.log("---" + res.length + " records shown ---")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+      console.log("")
+    } catch (err) {
+      throw ("error in reportEmployeeByManager query ", err)
+    } finally {
+      await db.close()
+    }
+  } catch (err) {
+    throw ("error in reportEmployeeByManager inquirer ", err)
+  }
 }
 
 function reportDepartmentSalary() {

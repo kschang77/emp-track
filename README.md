@@ -28,11 +28,15 @@ create CRUD for departments
 
   CREATE / READ / UPDATE / DELETE UI
 
-## Todo
-
 * view employees by manager (i.e. choose manager, see all employees managed)
 
   write join query first
+
+
+* trying inquirer-menu
+
+
+## Todo
 
 * view total budget of department (view total salary of employees in department)
  
