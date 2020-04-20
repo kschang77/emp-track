@@ -227,7 +227,10 @@ function CRUDdepartment() {
           })
           break;
         case 'Create New Department':
-          createDepartment();
+          let promise2 = createDepartment();
+          promise2.then(script2 => {
+            CRUDdepartment();
+          })
           break;
         case 'Update Existing Department':
           updateDepartment();
@@ -239,6 +242,7 @@ function CRUDdepartment() {
           mainMenu();
       }
     });
+  // CRUDdepartment();
 }
 
 //--- role---
@@ -319,7 +323,7 @@ function specialReports() {
 
 // CRUD employee
 
-function readEmployee() {
+async function readEmployee() {
   // display all employees
   console.log("@readEmployee")
   queryStr = "select first,last,role_id,manager_id from employee"
@@ -493,10 +497,10 @@ async function readDepartment() {
   }
 }
 
-function createDepartment() {
+async function createDepartment() {
   console.log("@createDepartment")
-  inquirer
-    .prompt([
+  try {
+    const ans = await inquirer.prompt([
       {
         type: "input",
         name: "newDepartment",
@@ -504,23 +508,25 @@ function createDepartment() {
         validate: validateDepartmentNameOk
       }
     ])
-    .then(function (answer) {
-      queryStr = "insert into department (name) value (?)"
-      var conn = getSQLConnection();
-      conn.query(queryStr, answer.newDepartment, function (err, res) {
-        if (err) throw err;
-        conn.end()
-        readDepartment();
-        CRUDdepartment();
-      })
+    queryStr = "insert into department (name) value (?)"
+    const db = makeDb(config)
+    try {
+      res = await db.query(queryStr, ans.newDepartment)
+    } catch (err) {
+      throw ("error in createDepartment query", err)
+    } finally {
+      await db.close()
     }
-    )
+  }
+  catch (err) {
+    throw ("error in createDepartment Inquirer", err)
+  }
 }
 
 function updateDepartment() {
   console.log("@updateDepartment")
-  inquirer
-    .prompt([
+  try {
+    const ans = await inquirer.prompt([
       {
         type: "input",
         name: "updid",
@@ -534,17 +540,20 @@ function updateDepartment() {
         validate: validateDepartmentNameOk
       }
     ])
-    .then(function (answer) {
-      queryStr = "update department set name=? where id=?"
-      var conn = getSQLConnection();
-      conn.query(queryStr, [answer.updDepartment, answer.updid], function (err, res) {
-        if (err) throw err;
-        conn.end();
-        readDepartment();
-        CRUDdepartment();
-      })
+
+    queryStr = "update department set name=? where id=?"
+    const db = makeDb(config)
+    try {
+      res = db.query(queryStr, [answer.updDepartment, answer.updid]);
+    } catch (err) {
+      throw ("error in updateDepartment query", err)
+    } finally {
+      await db.close()
     }
-    )
+  }
+  catch (err) {
+    throw ("error in updateDepartment Inquirer", err)
+  }
 }
 
 function deleteDepartment() {

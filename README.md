@@ -10,11 +10,7 @@ An employee tracking system
 * github setup completed
 * .gitignore created
 * create main menu, probably DEPARTMENTS, ROLES, EMPLOYEES, REPORTS
-
-## Todo
-
-
-* create CRUD for departments
+create CRUD for departments
 
   CREATE / READ / UPDATE / DELETE quries
 
@@ -31,6 +27,8 @@ An employee tracking system
   CREATE / READ / UPDATE / DELETE queries
 
   CREATE / READ / UPDATE / DELETE UI
+
+## Todo
 
 * view employees by manager (i.e. choose manager, see all employees managed)
 
