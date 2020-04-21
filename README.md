@@ -9,6 +9,11 @@
 
 ### 🏠 [Homepage](https://github.com/kschang77/emp-track#readme)
 
+
+### Demo
+
+![Demo Gif](emp-track.gif)
+
 ### Schema
 ```
 USE employeeDB;
