@@ -7,13 +7,34 @@ const util = require('util');
 const figlet = require("figlet")
 const chalk = require("chalk")
 const Table = require("cli-table")
-const clear = require('clear')
+// const clear = require('clear')
 
 
-// progress so far: all functions work except final report. 
+// progress so far: all functions work  
 // HOWEVER, menus are glitch-y, and I can't find the problems. 
 // All code were rewritten using async/wait, didn't help
 // trying alternate mainmenu with inquirer-menu, using branch
+// tested with simiplified menu, works, so I think it's nested 
+//await problem
+
+// /**
+//  //* @param { Promise } promise
+//  * @param { Object } improved - If you need to enhance the error.
+//  * @return { Promise }
+//
+function to(promise, improved) {
+  return promise
+    .then((data) => [null, data])
+    .catch((err) => {
+      if (improved) {
+        Object.assign(err, improved);
+      }
+
+      return [err]; // which is same as [err, undefined];
+    });
+}
+
+
 
 
 config = {
@@ -72,78 +93,78 @@ function validateDepartmentNameOk(str) {
   }
 }
 
-async function validateDepartmentID(str) {
-  if (str == '') {
-    return "This cannot be blank!"
-  }
-  if (!validateNumber(str)) {
-    return "That is not a number!"
-  }
-  // console.log("validateDepartmentID " + str)
-  queryStr = "select id,name from department where id = ?"
-  const db = makeDb(config)
-  try {
-    res = await db.query(queryStr, str);
-    // console.log("res ", res)
-    if (res.length === 0) {
-      return "Department ID not found!";
-    }
-    return true;
-  } catch (err) {
-    throw ("error in validateDepartmentID " + str + " ", err)
-  } finally {
-    await db.close()
-  }
-}
+// async function validateDepartmentID(str) {
+//   if (str == '') {
+//     return "This cannot be blank!"
+//   }
+//   if (!validateNumber(str)) {
+//     return "That is not a number!"
+//   }
+//   // console.log("validateDepartmentID " + str)
+//   queryStr = "select id,name from department where id = ?"
+//   const db = makeDb(config)
+//   try {
+//     res = await db.query(queryStr, str);
+//     // console.log("res ", res)
+//     if (res.length === 0) {
+//       return "Department ID not found!";
+//     }
+//     return true;
+//   } catch (err) {
+//     throw ("error in validateDepartmentID " + str + " ", err)
+//   } finally {
+//     await db.close()
+//   }
+// }
 
-async function validateEmployeeID(str) {
-  if (str === '') {
-    return "This cannot be blank!"
-  }
-  if (!validateNumber(str)) {
-    return "That is not a number!"
-  }
-  // if (str === "0") {
-  //   return true;  // 0 = self, do NOT check DB
-  // }
-  queryStr = "select * from employee where id = ?"
-  const db = makeDb(config)
-  try {
-    res = await db.query(queryStr, str);
-    // console.log("res ", res)
-    if (res.length === 0) {
-      return "Employee ID not found!";
-    }
-    return true;
-  } catch (err) {
-    throw ("error in validateEmployeeID " + str + " ", err)
-  } finally {
-    await db.close()
-  }
-}
+// async function validateEmployeeID(str) {
+//   if (str === '') {
+//     return "This cannot be blank!"
+//   }
+//   if (!validateNumber(str)) {
+//     return "That is not a number!"
+//   }
+//   // if (str === "0") {
+//   //   return true;  // 0 = self, do NOT check DB
+//   // }
+//   queryStr = "select * from employee where id = ?"
+//   const db = makeDb(config)
+//   try {
+//     res = await db.query(queryStr, str);
+//     // console.log("res ", res)
+//     if (res.length === 0) {
+//       return "Employee ID not found!";
+//     }
+//     return true;
+//   } catch (err) {
+//     throw ("error in validateEmployeeID " + str + " ", err)
+//   } finally {
+//     await db.close()
+//   }
+// }
 
-async function validateRoleID(str) {
-  if (str == '') {
-    return "This cannot be blank!"
-  }
-  if (!validateNumber(str)) {
-    return "That is not a number!"
-  }
-  queryStr = "select * from role where id = ?"
-  const db = makeDb(config)
-  try {
-    res = await db.query(queryStr, str);
-    // console.log("res ", res)
-    if (res.length === 0) {
-      return "Role ID not found!";
-    }
-    return true;
-  } catch (err) {
-    throw ("error in validateRoleID " + str + " ", err)
-  } finally {
-    await db.close()
-  }
-}
+// async function validateRoleID(str) {
+//   if (str == '') {
+//     return "This cannot be blank!"
+//   }
+//   if (!validateNumber(str)) {
+//     return "That is not a number!"
+//   }
+//   queryStr = "select * from role where id = ?"
+//   const db = makeDb(config)
+//   try {
+//     res = await db.query(queryStr, str);
+//     // console.log("res ", res)
+//     if (res.length === 0) {
+//       return "Role ID not found!";
+//     }
+//     return true;
+//   } catch (err) {
+//     throw ("error in validateRoleID " + str + " ", err)
+//   } finally {
+//     await db.close()
+//   }
+// }
 // end validation functions
 
 // start is just some fancy presentation
@@ -170,24 +191,24 @@ function end() {
 const employeeMenu = {
   message: 'Employee Menu',
   choices: {
-    "Show All Employees": function () {
+    "Show All Employees": async function () {
       // console.log("calling readEmployee")
-      readEmployee()
+      await readEmployee()
       // clear({ fullClear: false })
       return;
     },
-    "Create New Employee": function () {
-      createEmployee()
+    "Create New Employee": async function () {
+      await createEmployee()
       // clear({ fullClear: false })
       return
     },
-    "Update Existing Employees": function () {
-      updateEmployee()
+    "Update Existing Employees": async function () {
+      await updateEmployee()
       // clear({ fullClear: false })
       return
     },
-    "Delete Employee": function () {
-      deleteEmployee()
+    "Delete Employee": async function () {
+      await deleteEmployee()
       // clear({ fullClear: false })
       return
     }
@@ -197,24 +218,24 @@ const employeeMenu = {
 const departmentMenu = {
   message: 'Department Menu',
   choices: {
-    "Show All Departments": function () {
+    "Show All Departments": async function () {
       // console.log("calling readEmployee")
-      readDepartment()
+      await readDepartment()
       // clear({ fullClear: false })
       return;
     },
-    "Create New Department": function () {
-      createDepartment()
+    "Create New Department": async function () {
+      await createDepartment()
       // clear({ fullClear: false })
       return
     },
-    "Update Existing Department": function () {
-      updateDepartment()
+    "Update Existing Department": async function () {
+      await updateDepartment()
       // clear({ fullClear: false })
       return
     },
-    "Delete Department": function () {
-      deleteDepartment()
+    "Delete Department": async function () {
+      await deleteDepartment()
       // clear({ fullClear: false })
       return
     }
@@ -224,21 +245,21 @@ const departmentMenu = {
 const roleMenu = {
   message: 'Role Menu',
   choices: {
-    "Show All Roles": function () {
+    "Show All Roles": async function () {
       // console.log("calling readEmployee")
-      readRole()
+      await readRole()
       return;
     },
-    "Create New Role": function () {
-      createRole()
+    "Create New Role": async function () {
+      await createRole()
       return
     },
-    "Update Existing Role": function () {
-      updateRole()
+    "Update Existing Role": async function () {
+      await updateRole()
       return
     },
-    "Delete Role": function () {
-      deleteRole()
+    "Delete Role": async function () {
+      await deleteRole()
       return
     }
   }
@@ -247,12 +268,12 @@ const roleMenu = {
 const reportMenu = {
   message: "Report Menu",
   choices: {
-    "Report Employees by Manager": function () {
-      reportEmployeeByManager()
+    "Report Employees by Manager": async function () {
+      await reportEmployeeByManager()
       return
     },
-    "Report Department Salary Budget": function () {
-      reportDepartmentSalary()
+    "Report Department Salary Budget": async function () {
+      await reportDepartmentSalary()
       return
     }
   }
@@ -272,7 +293,7 @@ function createMenu() {
 
 
 // main program loop is here
-clear();
+// clear();
 start()
 menu(createMenu)
   .then(function () {
@@ -305,13 +326,7 @@ async function readEmployee() {
     })
     console.log(table.toString());
     // console.log("---" + res.length + " records shown ---")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
+    // console.log("")
   } catch (err) {
     //what error?
     throw ("error in readEmployee", err)
@@ -323,7 +338,7 @@ async function readEmployee() {
 async function createEmployee() {
   // console.log("@createEmployee")
   try {
-    clear();
+    // clear();
 
     const ans = await inquirer.prompt([
       {
@@ -342,13 +357,13 @@ async function createEmployee() {
         type: "input",
         name: "roleID",
         message: "Enter Role ID? ",
-        validate: validateRoleID
+        validate: validateInteger
       },
       {
         type: "input",
         name: "managerID",
         message: "Enter Manager ID?",
-        validate: validateEmployeeID
+        validate: validateInteger
       }
     ])
 
@@ -359,13 +374,13 @@ async function createEmployee() {
       //   ans.managerID = 1
       // }
       res = await db.query(queryStr, [ans.fname, ans.lname, ans.roleID, ans.managerID])
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
     } catch (err) {
       throw ("error in createEmployee query ", err)
     } finally {
@@ -384,7 +399,7 @@ async function updateEmployee() {
         type: "input",
         name: "updID",
         message: "Enter employee id to update? ",
-        validate: validateEmployeeID
+        validate: validateInteger
       },
       {
         type: "input",
@@ -402,13 +417,13 @@ async function updateEmployee() {
         type: "input",
         name: "roleID",
         message: "Enter Role ID? ",
-        validate: validateRoleID
+        validate: validateInteger
       },
       {
         type: "input",
         name: "managerID",
         message: "Enter Manager ID? ",
-        validate: validateEmployeeID
+        validate: validateInteger
       }
     ])
 
@@ -417,13 +432,13 @@ async function updateEmployee() {
     const db = makeDb(config)
     try {
       res = await db.query(queryStr, [ans.fname, ans.lname, ans.roleID, ans.managerID, ans.updID]);
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
     } catch (err) {
       throw ("error in updateEmployee query ", err)
     } finally {
@@ -437,14 +452,14 @@ async function updateEmployee() {
 async function deleteEmployee() {
   // console.log("@deleteEmployee")
   try {
-    clear();
+    // clear();
 
     const ans = await inquirer.prompt([
       {
         type: "input",
         name: "delID",
         message: "Enter employee id to delete? ",
-        validate: validateEmployeeID
+        validate: validateInteger
       }
     ])
 
@@ -454,13 +469,13 @@ async function deleteEmployee() {
 
     try {
       res = await db.query(queryStr, ans.delID);
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
     } catch (err) {
       throw ("error in deleteEmployee query ", err)
     } finally {
@@ -494,13 +509,13 @@ async function readDepartment() {
     })
     console.log(table.toString());
     // console.log("---" + res.length + " records shown ---")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
   } catch (err) {
     //what error?
     throw ("error in readDepartment", err)
@@ -525,13 +540,13 @@ async function createDepartment() {
     const db = makeDb(config)
     try {
       res = await db.query(queryStr, ans.newDepartment)
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
     } catch (err) {
       throw ("error in createDepartment query", err)
     } finally {
@@ -552,7 +567,7 @@ async function updateDepartment() {
         type: "input",
         name: "updid",
         message: "Enter department id to update? ",
-        validate: validateDepartmentID
+        validate: validateInteger
       },
       {
         type: "input",
@@ -566,13 +581,13 @@ async function updateDepartment() {
     const db = makeDb(config)
     try {
       res = await db.query(queryStr, [ans.updDepartment, ans.updid]);
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
     } catch (err) {
       throw ("error in updateDepartment query", err)
     } finally {
@@ -593,7 +608,7 @@ async function deleteDepartment() {
         type: "input",
         name: "delDepartment",
         message: "Enter department id to delete? ",
-        validate: validateDepartmentID
+        validate: validateInteger
       }
     ])
 
@@ -601,13 +616,13 @@ async function deleteDepartment() {
     const db = makeDb(config);
     try {
       res = await db.query(queryStr, ans.delDepartment);
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
     } catch (err) {
       throw ("error in deleteDepartment query", err)
     } finally {
@@ -639,17 +654,18 @@ async function readRole() {
     })
     console.log(table.toString());
     // console.log("---" + res.length + " records shown ---")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
+    // console.log("")
   } catch (err) {
     throw ("error in readRole ", err)
   } finally {
     await db.close();
+    return true
   }
 }
 
@@ -673,7 +689,7 @@ async function createRole() {
         type: "input",
         name: "departmentID",
         message: "Enter DepartmentID? ",
-        validate: validateDepartmentID
+        validate: validateInteger
       }
     ])
 
@@ -682,20 +698,22 @@ async function createRole() {
     const db = makeDb(config)
     try {
       res = await db.query(queryStr, [ans.title, ans.salary, ans.departmentID])
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
     } catch (err) {
       throw ("error in createRole query", err)
     } finally {
       await db.close()
+      return true
     }
   } catch (err) {
     throw ("error in createRole inquirer", err)
+    return false
   }
 }
 
@@ -707,7 +725,7 @@ async function updateRole() {
         type: "input",
         name: "updid",
         message: "Enter role id to update? ",
-        validate: validateRoleID
+        validate: validateInteger
       },
       {
         type: "input",
@@ -725,7 +743,7 @@ async function updateRole() {
         type: "input",
         name: "departmentID",
         message: "Enter DepartmentID? ",
-        validate: validateDepartmentID
+        validate: validateInteger
       }
     ])
 
@@ -734,17 +752,18 @@ async function updateRole() {
     const db = makeDb(config)
     try {
       res = await db.query(queryStr, [ans.title, ans.salary, ans.departmentID, ans.updid])
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
     } catch (err) {
       throw ("error in updateRole query", err)
     } finally {
       await db.close()
+      return true
     }
   } catch (err) {
     throw ("error in updateRole inquirer", err)
@@ -759,7 +778,7 @@ async function deleteRole() {
         type: "input",
         name: "delRole",
         message: "Enter role id to delete? ",
-        validate: validateRoleID
+        validate: validateInteger
       }
     ])
 
@@ -768,17 +787,18 @@ async function deleteRole() {
     const db = makeDb(config);
     try {
       res = await db.query(queryStr, ans.delRole)
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
+      // console.log("")
     } catch (err) {
       throw ("error in deleteRole query", err)
     } finally {
       await db.close()
+      return true
     }
   } catch (err) {
     throw ("error in deleteRole inquirer", err)
@@ -788,55 +808,78 @@ async function deleteRole() {
 
 // -- reports --
 async function reportEmployeeByManager() {
-  // enter Manager, display list of employees
-
   console.log("@reportEmployeeByManager")
-  try {
-    const ans = await inquirer.prompt([
-      {
-        type: "input",
-        name: "empID",
-        message: "Enter Manager id to report? ",
-        validate: validateEmployeeID
-      }
-    ])
-
-    queryStr = "select * from employee where manager_id = ?"
-
-    const db = makeDb(config);
-
-    try {
-      res = await db.query(queryStr, ans.empID);
-      console.log("---" + res.length + " records found ---")
-      var table = new Table({
-        head: ['id', 'first_name', 'last_name', 'role_id', 'manager_id'],
-        colWidths: [5, 20, 20, 5, 5]
-      })
-      res.forEach((row) => {
-        table.push([row.id, row.first_name, row.last_name, row.role_id, row.manager_id])
-      })
-      console.log(table.toString());
-      console.log("---" + res.length + " records shown ---")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-      console.log("")
-    } catch (err) {
-      throw ("error in reportEmployeeByManager query ", err)
-    } finally {
-      await db.close()
+  const [err1, ans] = await to(inquirer.prompt([
+    {
+      type: "input",
+      name: "empID",
+      message: "Enter Manager id to report? ",
+      validate: validateInteger
     }
-  } catch (err) {
-    throw ("error in reportEmployeeByManager inquirer ", err)
+  ]))
+
+  queryStr = "select * from employee where manager_id = ?"
+
+  const db = makeDb(config);
+
+  const [err2, res] = await to(db.query(queryStr, ans.empID));
+
+  console.log("---" + res.length + " records found ---")
+  var table = new Table({
+    head: ['id', 'first_name', 'last_name', 'role_id', 'manager_id'],
+    colWidths: [5, 20, 20, 5, 5]
+  })
+  res.forEach((row) => {
+    table.push([row.id, row.first_name, row.last_name, row.role_id, row.manager_id])
+  })
+  console.log(table.toString());
+  console.log("---" + res.length + " records shown ---")
+
+  const [err3] = await to(db.close())
+
+  if (err1) { // that's inquirer error
+    throw ("Inquirer in reportDepartmentSalary failed", err1);
   }
+  if (err2) { // that's query error
+    throw ("Query in reportDepartmentSalary failed", err2);
+  }
+  if (err3) { // that's db close error
+    throw ("db.close in reportDepartmentSalary failed", err3);
+  }
+  return true
+
 }
 
-function reportDepartmentSalary() {
-  console.log("--- reportDepartmentSalary ---")
-  // select department from list, display total salary of all employees
+async function reportDepartmentSalary() {
+  console.log("@reportDepartmentSalary")
+  const [err1, ans] = await to(inquirer.prompt([
+    {
+      type: "input",
+      name: "depID",
+      message: "Enter Department id to report? ",
+      validate: validateInteger
+    }
+  ])
+  )
 
-  specialReports();
+  queryStr = "select sum(salary) as total from employee, role where department_id = ? and employee.role_id = role.id group by department_id"
+
+  const db = makeDb(config);
+
+  const [err2, res] = await to(db.query(queryStr, ans.depID));
+
+  console.log("Department budget for DeptID = " + ans.depID + " is " + res[0].total)
+
+  const [err3] = await to(db.close())
+
+  if (err1) { // that's inquirer error
+    throw ("Inquirer in reportDepartmentSalary failed", err1);
+  }
+  if (err2) { // that's query error
+    throw ("Query in reportDepartmentSalary failed", err2);
+  }
+  if (err3) { // that's db close error
+    throw ("db.close in reportDepartmentSalary failed", err3);
+  }
+  return true
 }
