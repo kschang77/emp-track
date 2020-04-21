@@ -40,15 +40,15 @@ FOREIGN KEY (manager_id) REFERENCES employee(id)
 ```
 ### Uses
 
-Node.js  -- core functionality
-MySQL community edition -- server backend
-mysql npm -- node interface to MySQL
-inquirer npm -- main user interface
-util npm -- needed for a promise implementation
-inquirer-menu npm -- nested menu module for inquirer
-figlet npm -- pretty program start
-chalk npm -- pretty program start and end
-cli-table npm -- terminal table presentation
+* Node.js  -- core functionality
+* MySQL community edition -- server backend
+* mysql npm -- node interface to MySQL
+* inquirer npm -- main user interface
+* util npm -- needed for a promise implementation
+* inquirer-menu npm -- nested menu module for inquirer
+* figlet npm -- pretty program start
+* chalk npm -- pretty program start and end
+* cli-table npm -- terminal table presentation
 
 
 ### Technical Challenges
